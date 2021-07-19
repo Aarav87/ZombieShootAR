@@ -5,9 +5,16 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.google.ar.core.Anchor
+import com.google.ar.core.Frame
+import com.google.ar.core.Pose
+import com.google.ar.core.TrackingState
+import com.google.ar.sceneform.AnchorNode
+import com.google.ar.sceneform.FrameTime
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.rendering.Renderable
 import com.google.ar.sceneform.ux.ArFragment
+import com.google.ar.sceneform.ux.TransformableNode
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
@@ -15,6 +22,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     lateinit var arFragment: ArFragment
 
     lateinit var gun: Renderable
+    lateinit var frame: Frame
+    lateinit var pose: Pose
+    lateinit var anchor: Anchor
+    lateinit var anchorNode: AnchorNode
+
+    private var placed = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -28,6 +41,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         arFragment.arSceneView.planeRenderer.isEnabled = false
 
         loadModels()
+
+        arFragment.arSceneView.scene.addOnUpdateListener(this::onUpdateFrame)
 
     }
 
@@ -46,5 +61,28 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
                 return@exceptionally null
             }
+    }
+
+    private fun onUpdateFrame(frameTime: FrameTime) {
+        frame = arFragment.arSceneView.arFrame!!
+
+        if (frame.camera.trackingState == TrackingState.TRACKING) {
+            if (placed) {
+                anchor.detach()
+            }
+
+            pose = frame.camera.pose.compose(Pose.makeTranslation(0f, -0f, -2f))
+
+            anchor = arFragment.arSceneView.session!!.createAnchor(pose)
+            anchorNode = AnchorNode(anchor)
+            anchorNode.setParent(arFragment.arSceneView.scene.camera)
+
+            val gun = TransformableNode(arFragment.transformationSystem)
+
+            gun.setParent(anchorNode)
+            gun.renderable = this.gun
+
+            placed = true
+        }
     }
 }
