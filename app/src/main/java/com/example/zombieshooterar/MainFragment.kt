@@ -6,6 +6,8 @@ import androidx.fragment.app.Fragment
 import com.google.ar.sceneform.ux.ArFragment
 
 class MainFragment : Fragment(R.layout.fragment_main) {
+
+    // Initialize ArFragment
     lateinit var arFragment: ArFragment
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -16,5 +18,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         // Hide plane discovery controller
         arFragment.planeDiscoveryController.hide()
         arFragment.planeDiscoveryController.setInstructionView(null)
+
+        // Disable plane renderer
+        arFragment.arSceneView.planeRenderer.isEnabled = false
     }
 }
