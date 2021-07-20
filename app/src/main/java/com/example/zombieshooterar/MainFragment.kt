@@ -11,6 +11,8 @@ import com.google.ar.core.Pose
 import com.google.ar.core.TrackingState
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
+import com.google.ar.sceneform.math.Quaternion
+import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.rendering.Renderable
 import com.google.ar.sceneform.ux.ArFragment
@@ -71,7 +73,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 anchor.detach()
             }
 
-            pose = frame.camera.pose.compose(Pose.makeTranslation(0f, -0f, -2f))
+            pose = frame.camera.pose.compose(Pose.makeTranslation(0.2f, -0.25f, -1.2f))
 
             anchor = arFragment.arSceneView.session!!.createAnchor(pose)
             anchorNode = AnchorNode(anchor)
@@ -79,8 +81,17 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
             val gun = TransformableNode(arFragment.transformationSystem)
 
+            // Resize model
+            gun.scaleController.minScale = 0.02f
+            gun.scaleController.maxScale = 0.03f
+            gun.localScale = Vector3(0.02f, 0.02f, 0.02f)
+
+            // Rotate model
+            gun.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 180f)
+
             gun.setParent(anchorNode)
             gun.renderable = this.gun
+            gun.select()
 
             placed = true
         }
