@@ -73,7 +73,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 anchor.detach()
             }
 
-            pose = frame.camera.pose.compose(Pose.makeTranslation(0.2f, -0.25f, -1.2f))
+            pose = frame.camera.pose.compose(Pose.makeTranslation(0.3f, -0.35f, -0.8f))
 
             anchor = arFragment.arSceneView.session!!.createAnchor(pose)
             anchorNode = AnchorNode(anchor)
