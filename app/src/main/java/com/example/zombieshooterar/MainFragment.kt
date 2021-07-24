@@ -35,7 +35,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         ModelRenderable.builder()
             .setSource(
                 context,
-                Uri.parse("https://github.com/Aarav87/ZombieShootAR/raw/master/app/sampledata/models/battle_rifle_animated/battle_rifle.glb")
+                Uri.parse("https://github.com/Aarav87/ZombieShootAR/raw/master/app/models/guns/battle_rifle.glb")
             )
             .setIsFilamentGltf(true)
             .build()
