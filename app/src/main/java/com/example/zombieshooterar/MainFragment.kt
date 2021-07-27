@@ -10,11 +10,16 @@ import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
+import java.util.*
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
     // Initialize ArFragment
     lateinit var arFragment: ArFragment
+
+    // 3D models
+    lateinit var gunRenderable: ModelRenderable
+    lateinit var zombieRenderable: ModelRenderable
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -32,6 +37,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     }
 
     private fun loadModels() {
+        // Render gun model
         ModelRenderable.builder()
             .setSource(
                 context,
@@ -40,7 +46,24 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             .setIsFilamentGltf(true)
             .build()
             .thenAccept {
-                attachModelToCamera(it)
+                gunRenderable = it
+                attachModelToCamera()
+            }
+            .exceptionally {
+                Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
+                return@exceptionally null
+            }
+
+        // Render zombie model
+        ModelRenderable.builder()
+            .setSource(
+                context,
+                Uri.parse("https://github.com/Aarav87/ZombieShootAR/raw/master/app/models/zombies/zombie.glb")
+            )
+            .setIsFilamentGltf(true)
+            .build()
+            .thenAccept {
+                zombieRenderable = it
             }
             .exceptionally {
                 Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
@@ -48,8 +71,11 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             }
     }
 
-    private fun attachModelToCamera(renderable: ModelRenderable?) {
+    private fun attachModelToCamera() {
         val gun = TransformableNode(arFragment.transformationSystem)
+
+        // Disable movement in transformable node
+        gun.translationController.isEnabled = false
 
         // Resize model
         gun.scaleController.minScale = 0.02f
@@ -62,7 +88,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         // Rotate model
         gun.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 180f)
 
-        gun.renderable = renderable
+        gun.renderable = gunRenderable
         arFragment.arSceneView.scene.camera.addChild(gun)
     }
 }
