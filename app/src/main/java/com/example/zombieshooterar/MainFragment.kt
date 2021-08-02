@@ -2,6 +2,7 @@ package com.example.zombieshooterar
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -23,17 +24,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     // Initialize ArFragment
     lateinit var arFragment: ArFragment
 
-    lateinit var frame: Frame
-    lateinit var planes: Collection<Plane>
-    lateinit var anchor: Anchor
-    lateinit var anchorNode: AnchorNode
-
     // 3D models
     lateinit var gunRenderable: ModelRenderable
     lateinit var zombieRenderable: ModelRenderable
 
-    // Zombies alive
     private var zombiesAlive = 0
+    private var timeSurvived = 0
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -87,27 +83,25 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     }
 
     private fun zombieGenerator(frameTime: FrameTime) {
-        frame = arFragment.arSceneView.arFrame!!
-        planes = frame.getUpdatedTrackables(Plane::class.java)
-
-        if (zombiesAlive == 10) {
-            return
-        }
+        val frame: Frame = arFragment.arSceneView.arFrame!!
+        val planes: Collection<Plane> = frame.getUpdatedTrackables(Plane::class.java)
 
         for (plane in planes) {
             if (plane.trackingState == TrackingState.TRACKING) {
-                anchor = plane.createAnchor(plane.centerPose)
-                attachZombieToPlane(anchor)
-            } else {
-                Toast.makeText(context, "Scan around to detect plane", Toast.LENGTH_SHORT).show()
+                val savedPlane: Plane = plane
+                if (timeSurvived % 10 == 0 && zombiesAlive < 50) {
+                    val anchor: Anchor = savedPlane.createAnchor(savedPlane.centerPose)
+                    attachZombieToPlane(anchor)
+                }
             }
         }
+
+        timeSurvived++
+        Log.d("zombiesAlive", "$zombiesAlive")
     }
 
     private fun attachZombieToPlane(anchor: Anchor?) {
-        zombiesAlive++
-
-        anchorNode = AnchorNode(anchor)
+        val anchorNode = AnchorNode(anchor)
 
         // Resize model
         anchorNode.localScale = Vector3(0.01f, 0.01f, 0.01f)
@@ -115,10 +109,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         val cameraPosition = arFragment.arSceneView.scene.camera.worldPosition
         val anchorNodePosition = anchorNode.worldPosition
         val direction = Vector3.subtract(cameraPosition, anchorNodePosition)
-        anchorNode.worldRotation = Quaternion.lookRotation(direction, Vector3.up())
+        anchorNode.localRotation = Quaternion.lookRotation(direction, Vector3.up())
 
         anchorNode.renderable = zombieRenderable
         arFragment.arSceneView.scene.addChild(anchorNode)
+
+        zombiesAlive++
     }
 
     private fun attachModelToCamera() {
