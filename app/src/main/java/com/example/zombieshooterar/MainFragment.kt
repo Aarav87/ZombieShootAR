@@ -3,7 +3,11 @@ package com.example.zombieshooterar
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.google.ar.core.Anchor
@@ -18,6 +22,7 @@ import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import java.util.*
+import kotlinx.android.synthetic.main.fragment_main.*
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
@@ -25,8 +30,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     lateinit var arFragment: ArFragment
 
     // 3D models
-    lateinit var gunRenderable: ModelRenderable
-    lateinit var zombieRenderable: ModelRenderable
+    private lateinit var gunRenderable: ModelRenderable
+    private lateinit var zombieRenderable: ModelRenderable
 
     private var zombiesAlive = 0
     private var timeSurvived = 0
@@ -43,7 +48,23 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         arFragment.arSceneView.planeRenderer.isVisible = false
 
         loadModels()
+        addGunInfo()
 
+    }
+
+    private fun addGunInfo() {
+        val imageView = ImageView(context)
+
+        val imageParams = FrameLayout.LayoutParams(400, 200)
+        imageParams.gravity = Gravity.TOP or Gravity.RIGHT
+        imageParams.rightMargin = 100
+
+        imageView.layoutParams = imageParams
+
+        val imageResId = R.drawable.battlerifle
+
+        imageView.setImageResource(imageResId)
+        frameLayout.addView(imageView)
     }
 
     private fun loadModels() {
