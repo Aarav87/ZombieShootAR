@@ -1,21 +1,22 @@
 package com.example.zombieshooterar
 
+import android.graphics.Point
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.view.ViewManager
+import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.google.ar.core.Anchor
-import com.google.ar.core.Frame
-import com.google.ar.core.Plane
-import com.google.ar.core.TrackingState
+import com.google.ar.core.*
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
 import com.google.ar.sceneform.animation.ModelAnimator
@@ -27,6 +28,7 @@ import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import java.util.*
 import kotlinx.android.synthetic.main.fragment_main.*
+import kotlin.concurrent.thread
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
@@ -42,14 +44,16 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private var gunRenderableInstance: RenderableInstance? = null
 
     private var zombiesAlive = 0
+    private var zombiesKilled = 0
     private var timeSurvived = 0
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // Get height & width of users screen
-        val height = frameLayout.measuredHeight
-        val width = frameLayout.measuredWidth
+        val display = activity?.windowManager?.defaultDisplay
+        val point = Point()
+        display?.getRealSize(point)
 
         arFragment = childFragmentManager.findFragmentById(R.id.scene_form_fragment) as ArFragment
 
@@ -63,12 +67,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         addGunInfo()
 
         shoot.setOnClickListener {
-            onShoot(height, width)
+            onShoot(point)
         }
 
     }
 
-    private fun onShoot(height: Int, width: Int) {
+    private fun onShoot(point: Point) {
         // Start gun shooting animation
         val shootAnimation = ModelAnimator.ofAnimationTime(gunRenderableInstance, "CINEMA_4D_Main", 10F)
         shootAnimation.start()
@@ -76,19 +80,44 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         // Play gun shooting sound effect
         val gunSound = MediaPlayer.create(context, R.raw.battle_riffle_sound).start()
 
-        val ray = arFragment.arSceneView.scene.camera.screenPointToRay(width / 2f, height / 2f)
+        val ray = arFragment.arSceneView.scene.camera.screenPointToRay(point.x / 2f, point.y / 2f)
         val bullet = TransformableNode(arFragment.transformationSystem)
+
+        // Disable movement in transformable node
+        bullet.translationController.isEnabled = false
+
+        // Resize model
+        bullet.scaleController.minScale = 0.005f
+        bullet.scaleController.maxScale = 0.01f
+        bullet.localScale = Vector3(0.005f, 0.005f, 0.005f)
+
+        // Rotate model
+        val cameraPosition = arFragment.arSceneView.scene.camera.worldPosition
+        val bulletPosition = bullet.worldPosition
+        bullet.worldRotation = Quaternion.lookRotation(Vector3.subtract(cameraPosition, bulletPosition), Vector3.up())
+
         bullet.renderable = bulletRenderable
         arFragment.arSceneView.scene.addChild(bullet)
 
-        for (i in 0..200) {
-            bullet.worldPosition = Vector3(ray.getPoint(i * 0.1f))
+        thread {
+            for (i in 0..200) {
+                activity?.runOnUiThread {
+                    bullet.worldPosition = Vector3(ray.getPoint(i * 0.1f))
 
-            val nodeInContact = arFragment.arSceneView.scene.overlapTest(bullet)
+                    val nodeInContact = arFragment.arSceneView.scene.overlapTest(bullet)
 
-            if (nodeInContact != null) {
-                zombiesAlive --
-                arFragment.arSceneView.scene.removeChild(nodeInContact)
+                    if (nodeInContact != null) {
+                        arFragment.arSceneView.scene.removeChild(nodeInContact)
+                        zombiesAlive --
+                        zombiesKilled ++
+                    }
+                }
+
+                Thread.sleep(10)
+            }
+
+            activity?.runOnUiThread {
+                arFragment.arSceneView.scene.removeChild(bullet)
             }
         }
 
