@@ -6,12 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.ViewManager
-import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
@@ -100,7 +97,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         arFragment.arSceneView.scene.addChild(bullet)
 
         thread {
-            for (i in 0..200) {
+            for (i in 0..100) {
                 activity?.runOnUiThread {
                     bullet.worldPosition = Vector3(ray.getPoint(i * 0.1f))
 
@@ -108,8 +105,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
                     if (nodeInContact != null) {
                         arFragment.arSceneView.scene.removeChild(nodeInContact)
-                        zombiesAlive --
                         zombiesKilled ++
+                        kills.text = zombiesKilled.toString()
                     }
                 }
 
@@ -130,8 +127,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         val imageView = ImageView(context)
 
         val imageParams = FrameLayout.LayoutParams(400, 200)
-        imageParams.gravity = Gravity.TOP or Gravity.RIGHT
-        imageParams.rightMargin = 100
+        imageParams.gravity = Gravity.BOTTOM or Gravity.LEFT
+        imageParams.leftMargin = 100
 
         imageView.layoutParams = imageParams
 

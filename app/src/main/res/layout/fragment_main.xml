@@ -17,7 +17,8 @@
         android:src="@drawable/crosshair"
         android:layout_width="35dp"
         android:layout_height="35dp"
-        android:layout_gravity="center"/>
+        android:layout_gravity="center"
+        android:layout_marginLeft="10dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/shoot"
@@ -28,37 +29,60 @@
         android:layout_marginBottom="20dp"
         android:layout_marginEnd="20dp" />
 
-    <ImageView
-        android:id="@+id/healthIcon"
-        android:src="@drawable/health_icon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_gravity="bottom|left"
-        android:layout_marginBottom="16dp"
-        android:layout_marginLeft="5dp"/>
+    <LinearLayout
+        android:id="@+id/health"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="15dp">
 
-    <ProgressBar
-        android:id="@+id/healthBar"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="150dp"
-        android:layout_height="4dp"
-        android:layout_gravity="bottom|left"
-        android:layout_marginLeft="35dp"
-        android:layout_marginBottom="27dp"
-        android:max="100"
-        android:progress="100"
-        android:progressDrawable="@drawable/green_progress_bar"
-        android:scaleY="4" />
+        <ProgressBar
+            android:id="@+id/healthBar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:progressDrawable="@drawable/green_progress_bar"
+            android:layout_width="150dp"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progress="100"
+            android:scaleY="4"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="10dp" />
 
-    <TextView
-        android:id="@+id/healthStatus"
-        android:layout_width="30dp"
-        android:layout_height="20dp"
-        android:text="100"
-        android:textStyle="bold|italic"
-        android:textColor="#FFF"
-        android:layout_gravity="bottom|left"
-        android:layout_marginBottom="20dp"
-        android:layout_marginLeft="195dp"/>
+        <TextView
+            android:id="@+id/healthStatus"
+            android:layout_width="30dp"
+            android:layout_height="20dp"
+            android:text="100"
+            android:textStyle="bold|italic"
+            android:textColor="#FFF" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/killCounter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:layout_marginTop="40dp"
+        android:layout_marginRight="10dp">
+
+        <ImageView
+            android:id="@+id/killsIcon"
+            android:src="@drawable/kills_icon"
+            android:layout_width="25dp"
+            android:layout_height="25dp" />
+        
+        <TextView
+            android:id="@+id/kills"
+            android:layout_width="30dp"
+            android:layout_height="20dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginLeft="10dp"
+            android:text="0"
+            android:textStyle="bold|italic"
+            android:textColor="#FFF" />
+
+    </LinearLayout>
 
 </FrameLayout>
