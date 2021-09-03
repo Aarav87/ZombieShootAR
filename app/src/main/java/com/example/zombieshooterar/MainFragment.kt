@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import com.google.ar.core.*
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.FrameTime
+import com.google.ar.sceneform.Scene
 import com.google.ar.sceneform.animation.ModelAnimator
 import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
@@ -29,13 +30,12 @@ import kotlin.concurrent.thread
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
-    // Initialize ArFragment
-    lateinit var arFragment: ArFragment
+    private lateinit var arFragment: ArFragment
+    private lateinit var scene: Scene
 
     // Model Renderable
     private lateinit var gunRenderable: ModelRenderable
     private lateinit var zombieRenderable: ModelRenderable
-    private lateinit var bulletRenderable: ModelRenderable
 
     // Renderable Instance
     private var gunRenderableInstance: RenderableInstance? = null
@@ -52,7 +52,9 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         val point = Point()
         display?.getRealSize(point)
 
+        // Initialize ArFragment
         arFragment = childFragmentManager.findFragmentById(R.id.scene_form_fragment) as ArFragment
+        scene = arFragment.arSceneView.scene
 
         // Hide plane discovery controller
         arFragment.instructionsController.isEnabled = false
@@ -66,7 +68,6 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         shoot.setOnClickListener {
             onShoot(point)
         }
-
     }
 
     private fun onShoot(point: Point) {
@@ -77,44 +78,19 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         // Play gun shooting sound effect
         val gunSound = MediaPlayer.create(context, R.raw.battle_riffle_sound).start()
 
-        val ray = arFragment.arSceneView.scene.camera.screenPointToRay(point.x / 2f, point.y / 2f)
-        val bullet = TransformableNode(arFragment.transformationSystem)
-
-        // Disable movement in transformable node
-        bullet.translationController.isEnabled = false
-
-        // Resize model
-        bullet.scaleController.minScale = 0.005f
-        bullet.scaleController.maxScale = 0.01f
-        bullet.localScale = Vector3(0.005f, 0.005f, 0.005f)
-
-        // Rotate model
-        val cameraPosition = arFragment.arSceneView.scene.camera.worldPosition
-        val bulletPosition = bullet.worldPosition
-        bullet.worldRotation = Quaternion.lookRotation(Vector3.subtract(cameraPosition, bulletPosition), Vector3.up())
-
-        bullet.renderable = bulletRenderable
-        arFragment.arSceneView.scene.addChild(bullet)
+        val ray = scene.camera.screenPointToRay(point.x / 2f, point.y / 2f)
 
         thread {
-            for (i in 0..100) {
-                activity?.runOnUiThread {
-                    bullet.worldPosition = Vector3(ray.getPoint(i * 0.1f))
-
-                    val nodeInContact = arFragment.arSceneView.scene.overlapTest(bullet)
-
-                    if (nodeInContact != null) {
-                        arFragment.arSceneView.scene.removeChild(nodeInContact)
-                        zombiesKilled ++
-                        kills.text = zombiesKilled.toString()
-                    }
-                }
-
-                Thread.sleep(10)
-            }
-
             activity?.runOnUiThread {
-                arFragment.arSceneView.scene.removeChild(bullet)
+                val nodeInContact = scene.hitTest(ray, false)
+
+                if (nodeInContact.node!!.name == "Zombie") {
+                    scene.removeChild(nodeInContact.node)
+
+                    zombiesAlive --
+                    zombiesKilled ++
+                    kills.text = zombiesKilled.toString()
+                }
             }
         }
 
@@ -166,24 +142,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             .build()
             .thenAccept {
                 zombieRenderable = it
-                arFragment.arSceneView.scene.addOnUpdateListener(this::zombieGenerator)
-            }
-            .exceptionally {
-                Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
-                return@exceptionally null
-            }
-
-        // Render bullet model
-        ModelRenderable.builder()
-            .setSource(
-                context,
-                Uri.parse("https://github.com/Aarav87/ZombieShootAR/raw/master/app/models/bullets/battle_rifle_bullet.glb")
-            )
-            .setIsFilamentGltf(true)
-            .build()
-            .thenAccept {
-                bulletRenderable = it
-                attachModelToCamera()
+                scene.addOnUpdateListener(this::zombieGenerator)
             }
             .exceptionally {
                 Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
@@ -215,13 +174,16 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         // Resize model
         zombie.localScale = Vector3(0.01f, 0.01f, 0.01f)
 
-        val cameraPosition = arFragment.arSceneView.scene.camera.worldPosition
+        val cameraPosition = scene.camera.worldPosition
         val anchorNodePosition = zombie.worldPosition
         val direction = Vector3.subtract(cameraPosition, anchorNodePosition)
         zombie.localRotation = Quaternion.lookRotation(direction, Vector3.up())
 
+        // Change node name
+        zombie.name = "Zombie"
+
         zombie.renderable = zombieRenderable
-        arFragment.arSceneView.scene.addChild(zombie)
+        scene.addChild(zombie)
 
         zombiesAlive++
     }
@@ -244,7 +206,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         gun.localRotation = Quaternion.axisAngle(Vector3(0f, 1f, 0f), 180f)
 
         gun.renderable = gunRenderable
-        arFragment.arSceneView.scene.camera.addChild(gun)
+        scene.camera.addChild(gun)
 
         gunRenderableInstance = gun.renderableInstance!!
     }
