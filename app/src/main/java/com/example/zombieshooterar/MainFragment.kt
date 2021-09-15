@@ -6,12 +6,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.Toast
+import android.widget.*
 import androidx.fragment.app.Fragment
 import com.google.ar.core.*
 import com.google.ar.sceneform.AnchorNode
@@ -27,6 +25,7 @@ import com.google.ar.sceneform.ux.TransformableNode
 import java.util.*
 import kotlinx.android.synthetic.main.fragment_main.*
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
 class MainFragment : Fragment(R.layout.fragment_main) {
 
@@ -40,9 +39,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     // Renderable Instance
     private var gunRenderableInstance: RenderableInstance? = null
 
+    // Detected Planes
+    private var planesDetected: MutableList<Plane> = mutableListOf()
+
     private var zombiesAlive = 0
     private var zombiesKilled = 0
-    private var timeSurvived = 0
+    private var timeSurvived: Long = 0
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -64,6 +66,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
         loadModels()
         addGunInfo()
+
+        scene.addOnUpdateListener(this::zombieGenerator)
 
         shoot.setOnClickListener {
             onShoot(point)
@@ -142,7 +146,6 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             .build()
             .thenAccept {
                 zombieRenderable = it
-                scene.addOnUpdateListener(this::zombieGenerator)
             }
             .exceptionally {
                 Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
@@ -151,21 +154,31 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     }
 
     private fun zombieGenerator(frameTime: FrameTime) {
-        val frame: Frame = arFragment.arSceneView.arFrame!!
-        val planes: Collection<Plane> = frame.getUpdatedTrackables(Plane::class.java)
+        val frame = arFragment.arSceneView.arFrame!!
+        val planes = frame.getUpdatedTrackables(Plane::class.java)
 
-        for (plane in planes) {
-            if (plane.trackingState == TrackingState.TRACKING) {
-                val savedPlane: Plane = plane
-                if (timeSurvived % 10 == 0 && zombiesAlive < 50) {
-                    val anchor: Anchor = savedPlane.createAnchor(savedPlane.centerPose)
-                    attachZombieToPlane(anchor)
+        while (planesDetected.size < 50) {
+            for (plane in planes) {
+                if (plane.trackingState == TrackingState.TRACKING) {
+                    planesDetected.add(plane)
                 }
             }
         }
 
-        timeSurvived++
-        Log.d("zombiesAlive", "$zombiesAlive")
+        Handler(Looper.getMainLooper()).postDelayed({
+            val chronometer = Chronometer(context)
+            chronometer.base = SystemClock.elapsedRealtime()
+
+            chronometer.start()
+            timeSurvived = SystemClock.elapsedRealtime() - chronometer.base / 1000
+
+            if (timeSurvived % 50 == 0L) {
+                val plane = planesDetected[Random.nextInt(planesDetected.size)]
+                val anchor = plane.createAnchor(plane.centerPose)
+
+                attachZombieToPlane(anchor)
+            }
+        }, 10000)
     }
 
     private fun attachZombieToPlane(anchor: Anchor?) {
@@ -184,6 +197,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
         zombie.renderable = zombieRenderable
         scene.addChild(zombie)
+
+        ModelAnimator.ofAnimationFrame(zombie.renderableInstance, "Zombie@Z_Walk_InPlace", 100).start()
 
         zombiesAlive++
     }
