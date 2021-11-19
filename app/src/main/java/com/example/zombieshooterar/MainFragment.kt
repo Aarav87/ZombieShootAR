@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.fragment.app.Fragment
@@ -39,6 +38,10 @@ open class MainFragment: Fragment(R.layout.fragment_main) {
 
         // Renderable Instance
         var gunRenderableInstance: RenderableInstance? = null
+
+        // Ammo
+        var ammoInClip = 30
+        var ammoTotal = 300
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -66,26 +69,59 @@ open class MainFragment: Fragment(R.layout.fragment_main) {
         RenderModels(arFragment, scene, context).loadModels()
         addGunInfo()
 
-        shoot.setOnTouchListener(RepeatListener(400, 150, View.OnClickListener() {
-            onShoot(point)
-        }))
+        shoot.setOnTouchListener(RepeatListener(400, 150) {
+            if (ammoTotal == 0 && ammoInClip == 0) {
+                noAmmo()
+            } else if (ammoInClip == 0) {
+                onReload()
+            } else {
+                onShoot(point)
+            }
+
+        })
 
         scene.addOnUpdateListener(this::detectPlanes)
     }
 
+    private fun noAmmo() {
+        // Play empty gun sound effect
+        val emptyGunSound = MediaPlayer.create(context, R.raw.empty_gun_sound).start()
+
+        // Change color of ammo text
+        clipAmmo.setTextColor(resources.getColor(R.color.red))
+        totalAmmo.setTextColor(resources.getColor(R.color.red))
+    }
+
     private fun addGunInfo() {
-        val imageView = ImageView(context)
+        clipAmmo.text = "$ammoInClip"
+        totalAmmo.text = "$ammoTotal"
+        gunIcon.setImageResource(R.drawable.battlerifle)
+    }
 
-        val imageParams = FrameLayout.LayoutParams(400, 200)
-        imageParams.gravity = Gravity.BOTTOM or Gravity.LEFT
-        imageParams.leftMargin = 100
+    private fun onReload() {
+        // Disable shoot button
+        shoot.isEnabled = false
 
-        imageView.layoutParams = imageParams
+        // Start gun reload animation
+        val reloadAnimation = ModelAnimator.ofAnimationTime(gunRenderableInstance, "CINEMA_4D_Main", 5F)
+        reloadAnimation.start()
 
-        val imageResId = R.drawable.battlerifle
+        // Play gun reloading sound effect
+        val reloadSound = MediaPlayer.create(context, R.raw.reload_sound).start()
 
-        imageView.setImageResource(imageResId)
-        fragmentMain.addView(imageView)
+        // Reset ammo in clip
+        ammoInClip = 30
+        clipAmmo.text = "$ammoInClip"
+
+        // Reduce total ammo
+        ammoTotal -= 30
+        totalAmmo.text = "$ammoTotal"
+
+        // Stop reload animation
+        Handler(Looper.getMainLooper()).postDelayed({
+            reloadAnimation.cancel()
+            shoot.isEnabled = true
+        }, 5000)
     }
 
     private fun onShoot(point: Point) {
@@ -94,9 +130,12 @@ open class MainFragment: Fragment(R.layout.fragment_main) {
         shootAnimation.start()
 
         // Play gun shooting sound effect
-        val gunSound = MediaPlayer.create(context, R.raw.battle_riffle_sound).start()
+        val shootSound = MediaPlayer.create(context, R.raw.shoot_sound).start()
 
         val ray = scene.camera.screenPointToRay(point.x / 2f, point.y / 2f)
+
+        ammoInClip --
+        clipAmmo.text = "$ammoInClip"
 
         thread {
             activity?.runOnUiThread {

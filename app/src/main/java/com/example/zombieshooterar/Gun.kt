@@ -1,10 +1,12 @@
 package com.example.zombieshooterar
 
 import com.google.ar.sceneform.Scene
+import com.google.ar.sceneform.animation.ModelAnimator
 import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
+import kotlinx.android.synthetic.main.fragment_main.*
 
 class Gun (
     private val arFragment: ArFragment,

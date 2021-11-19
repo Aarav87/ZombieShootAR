@@ -1,6 +1,7 @@
 package com.example.zombieshooterar
 
 import android.os.SystemClock
+import android.view.animation.LinearInterpolator
 import android.widget.Chronometer
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
@@ -9,8 +10,10 @@ import com.google.ar.sceneform.Scene
 import com.google.ar.sceneform.animation.ModelAnimator
 import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
+import com.google.ar.sceneform.math.Vector3Evaluator
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class ZombieGenerator(
@@ -28,6 +31,13 @@ class ZombieGenerator(
 
             attachZombieToPlane(anchor)
         }
+    }
+
+    fun Vector3.distance(other: Vector3): Float {
+        val dx = x - other.x
+        val dy = y - other.y
+        val dz = z - other.z
+        return sqrt(dx * dx + dy * dy + dz * dz)
     }
 
     private fun attachZombieToPlane(anchor: Anchor?) {
